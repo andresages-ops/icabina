@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traductor Automático Bidireccional</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #f4f5f7; margin: 0; }
+    button { padding: 12px 24px; font-size: 1.1em; background: #0b57d0; color: white; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 20px; transition: background 0.2s;}
+    
+    #chat-container { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 15px; 
+      height: 70vh; 
+      overflow-y: auto; 
+      padding-right: 10px;
+      padding-bottom: 40px; /* Margen extra inferior */
+      scroll-behavior: smooth; /* Desplazamiento animado */
+    }
+    
+    .message { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .timestamp { font-size: 0.8em; color: #888; margin-bottom: 5px; }
+    .original { font-size: 1em; color: #5f6368; margin-bottom: 8px; font-style: italic; }
+    .translation { font-size: 1.3em; color: #1a73e8; font-weight: 500; }
+    .interim-container { margin-top: 15px; padding: 10px; color: #888; font-style: italic; min-height: 24px; }
+  </style>
+</head>
+<body>
+  <button id="start-btn">Iniciar Escucha</button>
+  <div id="chat-container"></div>
+  <div class="interim-container" id="interim-text"></div>
+  <script src="app.js"></script>
+</body>
+</html>
