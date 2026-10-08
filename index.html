@@ -74,10 +74,7 @@
     }
     button:active { opacity: 0.8; }
 
-    #pip-btn {
-      background: #0f9d58;
-      color: white;
-    }
+    #pip-btn { background: #0f9d58; color: white; }
 
     #pip-content {
       display: flex;
@@ -107,25 +104,9 @@
       transition: background-color 0.2s;
     }
 
-    .timestamp {
-      font-size: calc(var(--base-font-size) * 0.75);
-      color: var(--text-time);
-      margin-bottom: 4px;
-    }
-
-    .original {
-      font-size: calc(var(--base-font-size) * 0.92);
-      color: var(--text-original);
-      margin-bottom: 6px;
-      font-style: italic;
-    }
-
-    .translation {
-      font-size: calc(var(--base-font-size) * 1.25);
-      color: var(--text-trans);
-      font-weight: 500;
-      line-height: 1.35;
-    }
+    .timestamp { font-size: calc(var(--base-font-size) * 0.75); color: var(--text-time); margin-bottom: 4px; }
+    .original { font-size: calc(var(--base-font-size) * 0.92); color: var(--text-original); margin-bottom: 6px; font-style: italic; }
+    .translation { font-size: calc(var(--base-font-size) * 1.25); color: var(--text-trans); font-weight: 500; line-height: 1.35; }
 
     .highlight-data {
       background-color: var(--highlight-bg);
@@ -145,12 +126,11 @@
       border-top: 1px dashed var(--border-color);
     }
 
-    /* Barra inferior fija */
     .bottom-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 8px;
       padding-top: 10px;
       margin-top: 4px;
       border-top: 1px solid var(--border-color);
@@ -160,20 +140,50 @@
       background: var(--btn-bg);
       color: white;
       flex: 1;
-      max-width: 200px;
+      max-width: 220px;
       font-size: 1.05em;
-    }
-
-    .aux-controls {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
     }
 
+    /* Animaciones del Indicador Visual */
+    .indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #888; /* Apagado */
+      transition: background-color 0.3s;
+    }
+    .indicator.active {
+      background-color: #28a745; /* Verde - Escuchando */
+      box-shadow: 0 0 8px #28a745;
+      animation: pulse 1.5s infinite;
+    }
+    .indicator.receiving {
+      background-color: #ffc107; /* Amarillo - Recibiendo voz */
+      box-shadow: 0 0 12px #ffc107;
+      animation: pulse-fast 0.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+    @keyframes pulse-fast {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.8); }
+      50% { transform: scale(1.2); box-shadow: 0 0 0 8px rgba(255, 193, 7, 0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+
+    .aux-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;}
     .icon-btn {
       background: var(--btn-secondary);
       color: var(--btn-secondary-text);
-      padding: 9px 14px;
+      padding: 9px 12px;
       font-size: 1em;
       border-radius: 8px;
       display: inline-flex;
@@ -181,6 +191,7 @@
       justify-content: center;
       user-select: none;
     }
+    .separator { width: 1px; height: 24px; background: var(--border-color); margin: 0 4px; }
   </style>
 </head>
 <body>
@@ -193,8 +204,15 @@
     <div class="interim-container" id="interim-text"></div>
     
     <div class="bottom-bar">
-      <button id="start-btn">Iniciar Escucha</button>
+      <button id="start-btn">
+        <span id="audio-indicator" class="indicator"></span> 
+        <span id="start-text">Iniciar Escucha</span>
+      </button>
+      
       <div class="aux-controls">
+        <button id="clear-btn" class="icon-btn" title="Limpiar pantalla">🗑️</button>
+        <button id="download-btn" class="icon-btn" title="Descargar bitácora">💾</button>
+        <div class="separator"></div>
         <button id="font-dec" class="icon-btn" title="Reducir letra">A−</button>
         <button id="font-inc" class="icon-btn" title="Aumentar letra">A+</button>
         <button id="theme-btn" class="icon-btn" title="Modo Oscuro / Claro">🌙</button>
