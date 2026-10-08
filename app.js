@@ -9,7 +9,7 @@ const fontIncBtn = document.getElementById('font-inc');
 const fontDecBtn = document.getElementById('font-dec');
 const themeBtn = document.getElementById('theme-btn');
 const clearBtn = document.getElementById('clear-btn');
-const downloadBtn = document.getElementById('download-btn');
+// Variable downloadBtn eliminada
 
 // Pega tu Clave 1 de Azure aquí
 const AZURE_KEY = 'FJHwRvWK3oeyFwzWkVGJA2tPRhTyGN7S8HEGo6eML5S3pGpvrMJmJQQJ99CJACYeBjFXJ3w3AAAbACOGdUVB';
@@ -26,7 +26,6 @@ let apagadoManual = false;
 let pipWindowRef = null;
 let indicatorTimeout = null;
 
-// Control de tamaño de letra y tema
 let currentFontSize = 16;
 let isDarkMode = false;
 
@@ -50,7 +49,7 @@ themeBtn.addEventListener('click', () => {
   }
 });
 
-// Gestión de Memoria (Limpiar y Descargar)
+// Limpiar pantalla únicamente
 clearBtn.addEventListener('click', () => {
   if(confirm("¿Estás seguro de limpiar toda la transcripción de la pantalla?")) {
     chatContainer.innerHTML = '';
@@ -58,38 +57,11 @@ clearBtn.addEventListener('click', () => {
   }
 });
 
-downloadBtn.addEventListener('click', () => {
-  const mensajes = document.querySelectorAll('.message');
-  if (mensajes.length === 0) {
-    alert("No hay texto para descargar.");
-    return;
-  }
-
-  let contenido = "BITÁCORA DE TRADUCCIÓN - " + new Date().toLocaleString() + "\n";
-  contenido += "========================================================\n\n";
-
-  mensajes.forEach(msg => {
-    const time = msg.querySelector('.timestamp').innerText;
-    const orig = msg.querySelector('.original').innerText;
-    const trans = msg.querySelector('.translation').innerText;
-    contenido += `[${time}]\nOriginal: ${orig}\nTraducción: ${trans}\n\n`;
-  });
-
-  const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Bitacora_Cabina_${new Date().toISOString().slice(0,10)}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-// Resaltado de cifras
 function resaltarDatosDuros(texto) {
   return texto.replace(/\b\d+([.,-]\d+)*\b/g, '<span class="highlight-data">$&</span>');
 }
 
-// Procesamiento de traducción
+// Lógica de Traducción e Inyección de la Etiqueta de Idioma
 async function procesarTraduccion(textoOriginal) {
   if (!textoOriginal.trim()) return;
 
@@ -99,8 +71,13 @@ async function procesarTraduccion(textoOriginal) {
 
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message';
+  
+  // Se inserta la estructura del header (hora + etiqueta oculta)
   messageDiv.innerHTML = `
-    <div class="timestamp">${timeString}</div>
+    <div class="msg-header">
+      <div class="timestamp">${timeString}</div>
+      <div class="lang-indicator">--</div>
+    </div>
     <div class="original">${textoOriginalResaltado}</div>
     <div class="translation">Traduciendo...</div>
   `;
@@ -123,6 +100,11 @@ async function procesarTraduccion(textoOriginal) {
     const idiomaObjetivo = (idiomaDetectado === 'es') ? 'en' : 'es';
     let traduccionFinal = data[0].translations.find(t => t.to === idiomaObjetivo).text;
     
+    // Inyectar el texto de la etiqueta y hacerla visible
+    const langBadge = messageDiv.querySelector('.lang-indicator');
+    langBadge.textContent = `${idiomaDetectado.toUpperCase()} ➔ ${idiomaObjetivo.toUpperCase()}`;
+    langBadge.style.opacity = '1';
+
     traduccionFinal = resaltarDatosDuros(traduccionFinal);
     messageDiv.querySelector('.translation').innerHTML = traduccionFinal;
     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -131,11 +113,9 @@ async function procesarTraduccion(textoOriginal) {
   }
 }
 
-// Transcripción en tiempo real e Indicador Visual
 recognition.onresult = (event) => {
   let interimTranscript = '';
   
-  // Hacer que el indicador parpadee en amarillo indicando que recibe voz
   audioIndicator.classList.add('receiving');
   clearTimeout(indicatorTimeout);
   indicatorTimeout = setTimeout(() => {
@@ -196,7 +176,6 @@ startBtn.addEventListener('click', () => {
   }
 });
 
-// Apertura y sincronización con la ventana flotante (Picture-in-Picture)
 pipBtn.addEventListener('click', async () => {
   if (!('documentPictureInPicture' in window)) {
     alert("Tu navegador no soporta el modo flotante. Usa la versión más reciente de Google Chrome.");
