@@ -5,54 +5,201 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Traductor Pro de Cabina</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #f4f5f7; margin: 0; }
+    :root {
+      --bg-color: #f4f5f7;
+      --card-bg: #ffffff;
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      --text-main: #202124;
+      --text-original: #5f6368;
+      --text-trans: #1a73e8;
+      --text-time: #888888;
+      --interim-color: #666666;
+      --border-color: #dadce0;
+      --btn-bg: #0b57d0;
+      --btn-secondary: #e8eaed;
+      --btn-secondary-text: #202124;
+      --highlight-bg: #fce8e6;
+      --highlight-text: #d93025;
+      --highlight-border: #fad2cf;
+      --base-font-size: 16px;
+    }
+
+    body.dark-theme {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --card-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      --text-main: #e8eaed;
+      --text-original: #9aa0a6;
+      --text-trans: #8ab4f8;
+      --text-time: #70757a;
+      --interim-color: #9aa0a6;
+      --border-color: #3c4043;
+      --btn-bg: #1a73e8;
+      --btn-secondary: #2d2f31;
+      --btn-secondary-text: #e8eaed;
+      --highlight-bg: #3c1e1e;
+      --highlight-text: #f28b82;
+      --highlight-border: #5c2b29;
+    }
+
+    * { box-sizing: border-box; }
     
-    .controls { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-    button { padding: 12px 24px; font-size: 1.1em; background: #0b57d0; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s;}
-    #pip-btn { background: #0f9d58; }
-    #start-btn { display: block; margin-bottom: 15px; width: 100%; max-width: 200px; }
-    
-    /* El bloque que viajará a la ventana flotante */
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .top-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      padding: 10px 18px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s, opacity 0.15s;
+    }
+    button:active { opacity: 0.8; }
+
+    #pip-btn {
+      background: #0f9d58;
+      color: white;
+    }
+
     #pip-content {
       display: flex;
       flex-direction: column;
+      flex: 1;
+      min-height: 0;
       height: 100%;
     }
 
-    #chat-container { 
-      display: flex; flex-direction: column; gap: 15px; 
-      height: calc(100vh - 160px); /* Altura dinámica para caber en la ventana PiP */
-      overflow-y: auto; padding-right: 10px; padding-bottom: 20px; scroll-behavior: smooth; 
+    #chat-container {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 8px;
+      padding-bottom: 8px;
+      scroll-behavior: smooth;
     }
-    
-    .message { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .timestamp { font-size: 0.8em; color: #888; margin-bottom: 5px; }
-    .original { font-size: 1em; color: #5f6368; margin-bottom: 8px; font-style: italic; }
-    .translation { font-size: 1.3em; color: #1a73e8; font-weight: 500; }
-    
+
+    .message {
+      background: var(--card-bg);
+      padding: 14px;
+      border-radius: 12px;
+      box-shadow: var(--card-shadow);
+      transition: background-color 0.2s;
+    }
+
+    .timestamp {
+      font-size: calc(var(--base-font-size) * 0.75);
+      color: var(--text-time);
+      margin-bottom: 4px;
+    }
+
+    .original {
+      font-size: calc(var(--base-font-size) * 0.92);
+      color: var(--text-original);
+      margin-bottom: 6px;
+      font-style: italic;
+    }
+
+    .translation {
+      font-size: calc(var(--base-font-size) * 1.25);
+      color: var(--text-trans);
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
     .highlight-data {
-      background-color: #fce8e6;
-      color: #d93025;
+      background-color: var(--highlight-bg);
+      color: var(--highlight-text);
       font-weight: 700;
       padding: 2px 6px;
       border-radius: 4px;
-      border: 1px solid #fad2cf;
+      border: 1px solid var(--highlight-border);
     }
 
-    .interim-container { margin-top: 10px; padding: 10px; color: #888; font-style: italic; min-height: 24px; }
+    .interim-container {
+      padding: 8px 10px;
+      color: var(--interim-color);
+      font-style: italic;
+      font-size: calc(var(--base-font-size) * 0.9);
+      min-height: 24px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    /* Barra inferior fija */
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 10px;
+      margin-top: 4px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    #start-btn {
+      background: var(--btn-bg);
+      color: white;
+      flex: 1;
+      max-width: 200px;
+      font-size: 1.05em;
+    }
+
+    .aux-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: var(--btn-secondary);
+      color: var(--btn-secondary-text);
+      padding: 9px 14px;
+      font-size: 1em;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
-  <!-- Botón que se queda en la pestaña principal -->
-  <div class="controls">
+  <div class="top-controls">
     <button id="pip-btn">🪟 Abrir Ventana Flotante</button>
   </div>
 
-  <!-- Contenedor que se mudará completo a la ventana flotante -->
   <div id="pip-content">
-    <button id="start-btn">Iniciar Escucha</button>
     <div id="chat-container"></div>
     <div class="interim-container" id="interim-text"></div>
+    
+    <div class="bottom-bar">
+      <button id="start-btn">Iniciar Escucha</button>
+      <div class="aux-controls">
+        <button id="font-dec" class="icon-btn" title="Reducir letra">A−</button>
+        <button id="font-inc" class="icon-btn" title="Aumentar letra">A+</button>
+        <button id="theme-btn" class="icon-btn" title="Modo Oscuro / Claro">🌙</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
