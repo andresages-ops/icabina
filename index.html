@@ -8,6 +8,7 @@
     :root {
       --bg-color: #f4f5f7;
       --card-bg: #ffffff;
+      --card-bg-alt: #edf2f7; /* Tono sutilmente más oscuro/azulado para ES->EN */
       --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
       --text-main: #202124;
       --text-original: #5f6368;
@@ -27,6 +28,7 @@
     body.dark-theme {
       --bg-color: #121212;
       --card-bg: #1e1e1e;
+      --card-bg-alt: #2c2f36; /* Tono sutilmente más claro para ES->EN en modo oscuro */
       --card-shadow: 0 1px 4px rgba(0,0,0,0.6);
       --text-main: #e8eaed;
       --text-original: #9aa0a6;
@@ -97,35 +99,19 @@
     }
 
     .message {
-      background: var(--card-bg);
+      background-color: var(--card-bg);
       padding: 14px;
       border-radius: 12px;
       box-shadow: var(--card-shadow);
-      transition: background-color 0.2s;
+      transition: background-color 0.3s ease;
     }
 
-    /* Estructura para agrupar hora y etiqueta de idioma */
-    .msg-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
+    /* Clase que se activa cuando la traducción es de Español a Inglés */
+    .message.es-en {
+      background-color: var(--card-bg-alt);
     }
 
-    .timestamp { font-size: calc(var(--base-font-size) * 0.75); color: var(--text-time); margin-bottom: 0; }
-    
-    .lang-indicator {
-      font-size: calc(var(--base-font-size) * 0.7);
-      color: var(--text-time);
-      background-color: var(--btn-secondary);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      opacity: 0; /* Oculto hasta que Azure responda */
-      transition: opacity 0.3s ease;
-    }
-
+    .timestamp { font-size: calc(var(--base-font-size) * 0.75); color: var(--text-time); margin-bottom: 6px; }
     .original { font-size: calc(var(--base-font-size) * 0.92); color: var(--text-original); margin-bottom: 6px; font-style: italic; }
     .translation { font-size: calc(var(--base-font-size) * 1.25); color: var(--text-trans); font-weight: 500; line-height: 1.35; }
 
@@ -223,7 +209,6 @@
       
       <div class="aux-controls">
         <button id="clear-btn" class="icon-btn" title="Limpiar pantalla">🗑️</button>
-        <!-- Se eliminó el botón de descarga de TXT -->
         <div class="separator"></div>
         <button id="font-dec" class="icon-btn" title="Reducir letra">A−</button>
         <button id="font-inc" class="icon-btn" title="Aumentar letra">A+</button>

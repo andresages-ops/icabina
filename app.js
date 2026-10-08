@@ -9,7 +9,6 @@ const fontIncBtn = document.getElementById('font-inc');
 const fontDecBtn = document.getElementById('font-dec');
 const themeBtn = document.getElementById('theme-btn');
 const clearBtn = document.getElementById('clear-btn');
-// Variable downloadBtn eliminada
 
 // Pega tu Clave 1 de Azure aquí
 const AZURE_KEY = 'FJHwRvWK3oeyFwzWkVGJA2tPRhTyGN7S8HEGo6eML5S3pGpvrMJmJQQJ99CJACYeBjFXJ3w3AAAbACOGdUVB';
@@ -49,7 +48,6 @@ themeBtn.addEventListener('click', () => {
   }
 });
 
-// Limpiar pantalla únicamente
 clearBtn.addEventListener('click', () => {
   if(confirm("¿Estás seguro de limpiar toda la transcripción de la pantalla?")) {
     chatContainer.innerHTML = '';
@@ -61,7 +59,7 @@ function resaltarDatosDuros(texto) {
   return texto.replace(/\b\d+([.,-]\d+)*\b/g, '<span class="highlight-data">$&</span>');
 }
 
-// Lógica de Traducción e Inyección de la Etiqueta de Idioma
+// Procesamiento de Traducción y Color de Burbuja
 async function procesarTraduccion(textoOriginal) {
   if (!textoOriginal.trim()) return;
 
@@ -72,12 +70,8 @@ async function procesarTraduccion(textoOriginal) {
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message';
   
-  // Se inserta la estructura del header (hora + etiqueta oculta)
   messageDiv.innerHTML = `
-    <div class="msg-header">
-      <div class="timestamp">${timeString}</div>
-      <div class="lang-indicator">--</div>
-    </div>
+    <div class="timestamp">${timeString}</div>
     <div class="original">${textoOriginalResaltado}</div>
     <div class="translation">Traduciendo...</div>
   `;
@@ -98,13 +92,13 @@ async function procesarTraduccion(textoOriginal) {
     
     const idiomaDetectado = data[0].detectedLanguage.language;
     const idiomaObjetivo = (idiomaDetectado === 'es') ? 'en' : 'es';
-    let traduccionFinal = data[0].translations.find(t => t.to === idiomaObjetivo).text;
     
-    // Inyectar el texto de la etiqueta y hacerla visible
-    const langBadge = messageDiv.querySelector('.lang-indicator');
-    langBadge.textContent = `${idiomaDetectado.toUpperCase()} ➔ ${idiomaObjetivo.toUpperCase()}`;
-    langBadge.style.opacity = '1';
+    // Si se detecta que el cliente habló en español, se cambia el color de la burbuja
+    if (idiomaDetectado === 'es') {
+      messageDiv.classList.add('es-en');
+    }
 
+    let traduccionFinal = data[0].translations.find(t => t.to === idiomaObjetivo).text;
     traduccionFinal = resaltarDatosDuros(traduccionFinal);
     messageDiv.querySelector('.translation').innerHTML = traduccionFinal;
     chatContainer.scrollTop = chatContainer.scrollHeight;
