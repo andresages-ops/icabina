@@ -2,6 +2,7 @@ const startBtn = document.getElementById('start-btn');
 const pipBtn = document.getElementById('pip-btn');
 const chatContainer = document.getElementById('chat-container');
 const interimTextDisplay = document.getElementById('interim-text');
+const pipContent = document.getElementById('pip-content');
 
 // Pega tu Clave 1 de Azure aquí
 const AZURE_KEY = 'FJHwRvWK3oeyFwzWkVGJA2tPRhTyGN7S8HEGo6eML5S3pGpvrMJmJQQJ99CJACYeBjFXJ3w3AAAbACOGdUVB';
@@ -16,24 +17,17 @@ recognition.lang = 'en-US';
 let isListening = false;
 let apagadoManual = false;
 
-// Variables para el agrupamiento inteligente (Buffer)
-let textBuffer = '';
-let bufferTimeout = null;
-
-// Función para resaltar números, fechas y montos
+// Resalta números y fechas
 function resaltarDatosDuros(texto) {
-  // Encuentra cadenas de dígitos (incluso si tienen puntos o guiones como 123-456)
   return texto.replace(/\b\d+([.,-]\d+)*\b/g, '<span class="highlight-data">$&</span>');
 }
 
-// Función central de Traducción
+// Envío a Azure sin temporizador (Traducción instantánea)
 async function procesarTraduccion(textoOriginal) {
   if (!textoOriginal.trim()) return;
 
   const now = new Date();
   const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-  // Aplicamos el resaltado rojo al texto original
   const textoOriginalResaltado = resaltarDatosDuros(textoOriginal);
 
   const messageDiv = document.createElement('div');
@@ -62,9 +56,7 @@ async function procesarTraduccion(textoOriginal) {
     const idiomaObjetivo = (idiomaDetectado === 'es') ? 'en' : 'es';
     let traduccionFinal = data[0].translations.find(t => t.to === idiomaObjetivo).text;
     
-    // Aplicamos el resaltado rojo a la traducción también
     traduccionFinal = resaltarDatosDuros(traduccionFinal);
-    
     messageDiv.querySelector('.translation').innerHTML = traduccionFinal;
     chatContainer.scrollTop = chatContainer.scrollHeight;
   } catch (error) {
@@ -72,32 +64,22 @@ async function procesarTraduccion(textoOriginal) {
   }
 }
 
+// Escucha directa, cero retraso
 recognition.onresult = (event) => {
   let interimTranscript = '';
   
   for (let i = event.resultIndex; i < event.results.length; ++i) {
     if (event.results[i].isFinal) {
-      // En lugar de enviar a traducir de inmediato, lo sumamos a la sala de espera (Buffer)
-      textBuffer += ' ' + event.results[i][0].transcript.trim();
-      
-      // Reiniciamos la cuenta regresiva porque la persona sigue hablando
-      clearTimeout(bufferTimeout);
-      
-      // Esperamos 1.2 segundos de silencio para asegurar que agrupe los números telefónicos
-      bufferTimeout = setTimeout(() => {
-        procesarTraduccion(textBuffer);
-        textBuffer = ''; // Limpiamos la sala de espera
-        interimTextDisplay.innerHTML = '';
-      }, 1200);
-
+      const textoOriginal = event.results[i][0].transcript.trim();
+      interimTextDisplay.innerHTML = ''; 
+      procesarTraduccion(textoOriginal);
     } else {
       interimTranscript += event.results[i][0].transcript;
     }
   }
   
-  // Mostramos en gris lo que se está guardando + lo que está escuchando en tiempo real
-  if(interimTranscript !== '' || textBuffer !== '') {
-    interimTextDisplay.innerHTML = textBuffer + ' <span style="color:#bbb">' + interimTranscript + '</span>';
+  if (interimTranscript !== '') {
+    interimTextDisplay.innerHTML = interimTranscript;
   }
 };
 
@@ -137,7 +119,7 @@ startBtn.addEventListener('click', () => {
   }
 });
 
-// Lógica del Botón de Ventana Flotante (PiP)
+// Modo Flotante (Lleva consigo todo el bloque)
 pipBtn.addEventListener('click', async () => {
   if (!('documentPictureInPicture' in window)) {
     alert("Tu navegador no soporta el modo flotante. Usa la versión más reciente de Chrome.");
@@ -147,10 +129,9 @@ pipBtn.addEventListener('click', async () => {
   try {
     const pipWindow = await documentPictureInPicture.requestWindow({
       width: 450,
-      height: 600
+      height: 650
     });
     
-    // Copia los estilos de tu página a la ventanita flotante
     [...document.styleSheets].forEach((styleSheet) => {
       try {
         const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
@@ -160,12 +141,12 @@ pipBtn.addEventListener('click', async () => {
       } catch (e) {}
     });
     
-    // Mueve el panel de chat a la ventana flotante
-    pipWindow.document.body.appendChild(chatContainer);
+    // Movemos el botón, el chat y el texto en tiempo real
+    pipWindow.document.body.appendChild(pipContent);
     
-    // Cuando cierres la ventana flotante, regresa el chat a tu pestaña original
+    // Cuando se cierre la ventana, devolvemos todo a su lugar original
     pipWindow.addEventListener("pagehide", () => {
-      document.body.insertBefore(chatContainer, document.getElementById('interim-text'));
+      document.body.appendChild(pipContent);
     });
     
   } catch (error) {

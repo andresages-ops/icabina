@@ -9,11 +9,20 @@
     
     .controls { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
     button { padding: 12px 24px; font-size: 1.1em; background: #0b57d0; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s;}
-    #pip-btn { background: #0f9d58; } /* Botón verde para el modo flotante */
+    #pip-btn { background: #0f9d58; }
+    #start-btn { display: block; margin-bottom: 15px; width: 100%; max-width: 200px; }
     
+    /* El bloque que viajará a la ventana flotante */
+    #pip-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
     #chat-container { 
       display: flex; flex-direction: column; gap: 15px; 
-      height: 70vh; overflow-y: auto; padding-right: 10px; padding-bottom: 40px; scroll-behavior: smooth; 
+      height: calc(100vh - 160px); /* Altura dinámica para caber en la ventana PiP */
+      overflow-y: auto; padding-right: 10px; padding-bottom: 20px; scroll-behavior: smooth; 
     }
     
     .message { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -21,7 +30,6 @@
     .original { font-size: 1em; color: #5f6368; margin-bottom: 8px; font-style: italic; }
     .translation { font-size: 1.3em; color: #1a73e8; font-weight: 500; }
     
-    /* Estilo visual para los Datos Duros (Números) */
     .highlight-data {
       background-color: #fce8e6;
       color: #d93025;
@@ -31,16 +39,22 @@
       border: 1px solid #fad2cf;
     }
 
-    .interim-container { margin-top: 15px; padding: 10px; color: #888; font-style: italic; min-height: 24px; }
+    .interim-container { margin-top: 10px; padding: 10px; color: #888; font-style: italic; min-height: 24px; }
   </style>
 </head>
 <body>
+  <!-- Botón que se queda en la pestaña principal -->
   <div class="controls">
-    <button id="start-btn">Iniciar Escucha</button>
-    <button id="pip-btn">🪟 Modo Flotante</button>
+    <button id="pip-btn">🪟 Abrir Ventana Flotante</button>
   </div>
-  <div id="chat-container"></div>
-  <div class="interim-container" id="interim-text"></div>
+
+  <!-- Contenedor que se mudará completo a la ventana flotante -->
+  <div id="pip-content">
+    <button id="start-btn">Iniciar Escucha</button>
+    <div id="chat-container"></div>
+    <div class="interim-container" id="interim-text"></div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
