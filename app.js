@@ -15,13 +15,12 @@ const AZURE_KEY = 'FJHwRvWK3oeyFwzWkVGJA2tPRhTyGN7S8HEGo6eML5S3pGpvrMJmJQQJ99CJA
 const AZURE_REGION = 'eastus'; 
 const AZURE_ENDPOINT = 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=es&to=en';
 
-const recognition = new webkitSpeechRecognition();
-recognition.continuous = true;
-recognition.interimResults = true;
-recognition.lang = 'en-US'; 
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+let recognition = null;
 let isListening = false;
 let apagadoManual = false;
+let restartTimeout = null;
 let pipWindowRef = null;
 let indicatorTimeout = null;
 
@@ -49,7 +48,7 @@ themeBtn.addEventListener('click', () => {
 });
 
 clearBtn.addEventListener('click', () => {
-  if(confirm("¿Estás seguro de limpiar toda la transcripción de la pantalla?")) {
+  if (confirm("¿Estás seguro de limpiar toda la transcripción de la pantalla?")) {
     chatContainer.innerHTML = '';
     interimTextDisplay.innerHTML = '';
   }
@@ -59,7 +58,6 @@ function resaltarDatosDuros(texto) {
   return texto.replace(/\b\d+([.,-]\d+)*\b/g, '<span class="highlight-data">$&</span>');
 }
 
-// Procesamiento de Traducción y Color de Burbuja
 async function procesarTraduccion(textoOriginal) {
   if (!textoOriginal.trim()) return;
 
@@ -93,7 +91,6 @@ async function procesarTraduccion(textoOriginal) {
     const idiomaDetectado = data[0].detectedLanguage.language;
     const idiomaObjetivo = (idiomaDetectado === 'es') ? 'en' : 'es';
     
-    // Si se detecta que el cliente habló en español, se cambia el color de la burbuja
     if (idiomaDetectado === 'es') {
       messageDiv.classList.add('es-en');
     }
@@ -107,30 +104,6 @@ async function procesarTraduccion(textoOriginal) {
   }
 }
 
-recognition.onresult = (event) => {
-  let interimTranscript = '';
-  
-  audioIndicator.classList.add('receiving');
-  clearTimeout(indicatorTimeout);
-  indicatorTimeout = setTimeout(() => {
-    audioIndicator.classList.remove('receiving');
-  }, 500);
-  
-  for (let i = event.resultIndex; i < event.results.length; ++i) {
-    if (event.results[i].isFinal) {
-      const textoOriginal = event.results[i][0].transcript.trim();
-      interimTextDisplay.innerHTML = ''; 
-      procesarTraduccion(textoOriginal);
-    } else {
-      interimTranscript += event.results[i][0].transcript;
-    }
-  }
-  
-  if (interimTranscript !== '') {
-    interimTextDisplay.innerHTML = interimTranscript;
-  }
-};
-
 function setListeningState(listening) {
   isListening = listening;
   if (listening) {
@@ -141,32 +114,101 @@ function setListeningState(listening) {
     startText.textContent = "Iniciar Escucha";
     startBtn.style.backgroundColor = "";
     audioIndicator.className = "indicator";
+    interimTextDisplay.innerHTML = '';
   }
 }
 
-recognition.onerror = (event) => {
-  if (event.error === 'not-allowed') setListeningState(false);
-};
+// Crea una instancia completamente limpia cada vez para evitar bloqueos de Chrome
+function iniciarMotorVoz() {
+  clearTimeout(restartTimeout);
 
-recognition.onend = () => {
-  if (isListening && !apagadoManual) {
-    setTimeout(() => { try { recognition.start(); } catch(e) {} }, 250);
-  } else {
-    setListeningState(false);
+  if (recognition) {
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+    try { recognition.abort(); } catch (e) {}
+    recognition = null;
   }
-};
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (event) => {
+    let interimTranscript = '';
+    
+    audioIndicator.classList.add('receiving');
+    clearTimeout(indicatorTimeout);
+    indicatorTimeout = setTimeout(() => {
+      audioIndicator.classList.remove('receiving');
+    }, 500);
+    
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        const textoOriginal = event.results[i][0].transcript.trim();
+        interimTextDisplay.innerHTML = ''; 
+        procesarTraduccion(textoOriginal);
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+    
+    if (interimTranscript !== '') {
+      interimTextDisplay.innerHTML = interimTranscript;
+    }
+  };
+
+  recognition.onerror = (event) => {
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      apagadoManual = true;
+      setListeningState(false);
+    }
+    // Errores como 'no-speech', 'network' o 'audio-capture' disparan onend y se recuperan solos
+  };
+
+  recognition.onend = () => {
+    if (isListening && !apagadoManual) {
+      restartTimeout = setTimeout(() => {
+        if (isListening && !apagadoManual) {
+          iniciarMotorVoz();
+        }
+      }, 300);
+    } else {
+      setListeningState(false);
+    }
+  };
+
+  try {
+    recognition.start();
+    setListeningState(true);
+  } catch (e) {
+    restartTimeout = setTimeout(() => {
+      if (isListening && !apagadoManual) iniciarMotorVoz();
+    }, 500);
+  }
+}
+
+function detenerMotorVoz() {
+  apagadoManual = true;
+  clearTimeout(restartTimeout);
+  setListeningState(false);
+
+  if (recognition) {
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+    try { recognition.abort(); } catch (e) {}
+    recognition = null;
+  }
+}
 
 startBtn.addEventListener('click', () => {
   if (!isListening) {
     apagadoManual = false;
-    try {
-      recognition.start();
-      setListeningState(true);
-    } catch(e) {}
+    iniciarMotorVoz();
   } else {
-    apagadoManual = true;
-    recognition.stop();
-    setListeningState(false);
+    detenerMotorVoz();
   }
 });
 
