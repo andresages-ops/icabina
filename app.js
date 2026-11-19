@@ -21,6 +21,8 @@ let recognition = null;
 let isListening = false;
 let apagadoManual = false;
 let restartTimeout = null;
+let watchdogInterval = null;
+let lastActivityTime = Date.now();
 let pipWindowRef = null;
 let indicatorTimeout = null;
 
@@ -118,11 +120,30 @@ function setListeningState(listening) {
   }
 }
 
-// Crea una instancia completamente limpia cada vez para evitar bloqueos de Chrome
+// Vigila que Chrome no se quede "zombi" en silencio o con texto congelado
+function iniciarVigilancia() {
+  clearInterval(watchdogInterval);
+  lastActivityTime = Date.now();
+
+  watchdogInterval = setInterval(() => {
+    if (!isListening || apagadoManual) return;
+
+    const tiempoSinActividad = Date.now() - lastActivityTime;
+    // Si pasan 10 segundos sin actividad o con una frase atorada, reinicia en silencio
+    if (tiempoSinActividad > 10000) {
+      iniciarMotorVoz();
+    }
+  }, 2500);
+}
+
 function iniciarMotorVoz() {
   clearTimeout(restartTimeout);
+  lastActivityTime = Date.now();
 
   if (recognition) {
+    recognition.onstart = null;
+    recognition.onsoundstart = null;
+    recognition.onspeechstart = null;
     recognition.onresult = null;
     recognition.onerror = null;
     recognition.onend = null;
@@ -135,7 +156,12 @@ function iniciarMotorVoz() {
   recognition.interimResults = true;
   recognition.lang = 'en-US';
 
+  recognition.onstart = () => { lastActivityTime = Date.now(); };
+  recognition.onsoundstart = () => { lastActivityTime = Date.now(); };
+  recognition.onspeechstart = () => { lastActivityTime = Date.now(); };
+
   recognition.onresult = (event) => {
+    lastActivityTime = Date.now();
     let interimTranscript = '';
     
     audioIndicator.classList.add('receiving');
@@ -162,9 +188,9 @@ function iniciarMotorVoz() {
   recognition.onerror = (event) => {
     if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
       apagadoManual = true;
+      clearInterval(watchdogInterval);
       setListeningState(false);
     }
-    // Errores como 'no-speech', 'network' o 'audio-capture' disparan onend y se recuperan solos
   };
 
   recognition.onend = () => {
@@ -173,7 +199,7 @@ function iniciarMotorVoz() {
         if (isListening && !apagadoManual) {
           iniciarMotorVoz();
         }
-      }, 300);
+      }, 250);
     } else {
       setListeningState(false);
     }
@@ -185,16 +211,20 @@ function iniciarMotorVoz() {
   } catch (e) {
     restartTimeout = setTimeout(() => {
       if (isListening && !apagadoManual) iniciarMotorVoz();
-    }, 500);
+    }, 400);
   }
 }
 
 function detenerMotorVoz() {
   apagadoManual = true;
   clearTimeout(restartTimeout);
+  clearInterval(watchdogInterval);
   setListeningState(false);
 
   if (recognition) {
+    recognition.onstart = null;
+    recognition.onsoundstart = null;
+    recognition.onspeechstart = null;
     recognition.onresult = null;
     recognition.onerror = null;
     recognition.onend = null;
@@ -207,6 +237,7 @@ startBtn.addEventListener('click', () => {
   if (!isListening) {
     apagadoManual = false;
     iniciarMotorVoz();
+    iniciarVigilancia();
   } else {
     detenerMotorVoz();
   }
